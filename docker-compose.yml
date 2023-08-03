@@ -1,0 +1,49 @@
+version: '3.8'
+
+networks:
+  spring_keycloak_network:
+    driver: bridge
+
+services:
+
+  oracle-db:
+    image: dicocodi/oracle-db-dc:latest  # Replace with the appropriate Oracle Database image tag
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    networks:
+      - spring_keycloak_network
+    environment:
+      - TZ=UTC
+
+  keycloak:
+    image: dicocodi/keycloak-dc:latest 
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Duser.timezone=UTC
+      - KC_HTTP_PORT=8080
+      - KC_HOSTNAME=keycloak
+      - KC_HOSTNAME_STRICT="false"
+      - KC_EDGE=proxy
+    networks:
+      - spring_keycloak_network
+
+  empleado-app:
+    image: dicocodi/empleado-app:latest
+    container_name: empleado-app
+    depends_on:
+      - oracle-db
+      - keycloak
+    ports:
+      - "8091:8091"
+    networks:
+      - spring_keycloak_network
+    environment:
+      - JAVA_OPTS=-Duser.timezone=UTC
+
+volumes:
+  oracle_data:
